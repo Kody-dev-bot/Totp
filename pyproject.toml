@@ -1,0 +1,32 @@
+[project]
+name = "totp"
+version = "0.1.0"
+description = "A tool to generate TOTP"
+authors = [
+    { name = "kdoy", email = "zj.wang.work@zohomail.cn" }
+]
+readme = "README.md"
+requires-python = ">=3.13,<4.0"
+dependencies = [
+    "poetry-core (>=2.0.0,<3.0.0)",
+    "click (>=8.2.1,<9.0.0)",
+    "loguru (>=0.7.3,<0.8.0)",
+    "pyotp (>=2.9.0,<3.0.0)",
+    "pyperclip (>=1.9.0,<2.0.0)",
+    "toml (>=0.10.2,<0.11.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "aliyun"
+url = "https://mirrors.aliyun.com/pypi/simple/"
+
+[tool.poetry.group.dev.dependencies]
+nuitka = "^2.7.12"
+black = "^25.1.0"
+ruff = "^0.12.4"
+
