@@ -1,0 +1,183 @@
+name: 构建与发布
+
+on:
+  push:
+    tags:
+      - 'v*'  # 标签推送时触发（如v1.0.0）
+
+jobs:
+  test:
+    name: 运行测试
+    runs-on: ubuntu-latest
+    steps:
+      - name: 安装Poetry
+        run: |
+          # 使用官方安装脚本确保正确安装
+          curl -sSL https://install.python-poetry.org | python3 -
+          # 将Poetry添加到环境变量
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        shell: bash
+
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+
+      - name: 设置Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'poetry'
+
+      - name: 安装Poetry
+        run: pip install poetry
+
+      - name: 安装依赖
+        run: poetry install --no-root
+
+  build:
+    name: 构建 ${{ matrix.os }} 版本
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        include:
+          - os: ubuntu-latest
+            os_name: Linux
+            asset_suffix: linux
+          - os: windows-latest
+            os_name: Windows_NT
+            asset_suffix: windows.exe
+          - os: macos-latest
+            os_name: Darwin
+            asset_suffix: macos
+
+    steps:
+      - name: 安装Poetry
+        run: |
+          # 检测当前操作系统（Bash语法）
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            # Windows安装逻辑（在Bash中调用PowerShell命令）
+            powershell -Command "(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -"
+            # 将Poetry路径添加到环境变量
+            echo "$APPDATA/Python/Scripts" >> $GITHUB_PATH
+          else
+            # Linux/macOS安装逻辑
+            curl -sSL https://install.python-poetry.org | python3 -
+            echo "$HOME/.local/bin" >> $GITHUB_PATH
+          fi
+        shell: bash  # 保持bash shell，但内部适配Windows
+
+      - name: 验证Poetry安装
+        run: |
+          poetry --version
+        shell: bash
+
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'poetry'
+
+      - name: 安装Poetry
+        run: pip install poetry
+
+      - name: 安装依赖
+        run: poetry install --no-root
+
+      - name: 显示环境信息（调试用）
+        run: |
+          poetry --version
+          poetry env info
+          # 修改：使用英文输出避免编码问题，或设置UTF-8编码
+          poetry run python -c "import sys; sys.stdout.reconfigure(encoding='utf-8'); import click, pyotp, pyperclip, loguru; print('Dependencies loaded successfully')"
+        shell: bash
+
+      # 对于Windows平台，在构建前设置Python编码环境变量
+      - name: 设置Windows编码
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "PYTHONUTF8=1" >> $GITHUB_ENV
+        shell: bash
+
+      - name: 构建（Windows）
+        if: matrix.os == 'windows-latest'
+        run: |
+          make build os=${{ matrix.os_name }}
+        shell: pwsh
+        timeout-minutes: 45
+
+      - name: 安装系统依赖（Linux）
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc
+
+      - name: 安装系统依赖（macOS）
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install gcc
+
+      - name: 构建（Linux/macOS）
+        if: matrix.os != 'windows-latest'
+        run: |
+          make build os=${{ matrix.os_name }}
+        shell: bash
+        timeout-minutes: 45
+
+      - name: 构建（Windows）
+        if: matrix.os == 'windows-latest'
+        run: |
+          make build os=${{ matrix.os_name }}
+        shell: pwsh
+        timeout-minutes: 45
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: totp_v${{ github.ref_name }}_${{ matrix.asset_suffix }}
+          path: dist/totp_v*_${{ matrix.asset_suffix }}
+
+  release:
+    name: 创建发布
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 下载所有构建产物
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: 显示下载的产物（调试用）
+        run: |
+          ls -R dist
+
+      - name: 创建Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOTP_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+
+      - name: 上传Release资产
+        run: |
+          # 遍历所有产物并上传到Release（移除--name参数）
+          find dist -type f | while read -r asset; do
+            # 直接指定文件路径，文件名会自动使用原始名称
+            gh release upload ${{ github.ref_name }} "$asset"
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOTP_TOKEN }}
+        shell: bash
