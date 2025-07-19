@@ -59,20 +59,19 @@ NUITKA_OPTS := \
 dev:
 	poetry install --no-root
 
-# 构建可执行文件
-.PHONY: build
-build:
-	# 创建输出目录
-	mkdir -p dist
-	# 执行Nuitka编译（自动包含条件参数）
-	poetry run nuitka $(NUITKA_OPTS) src/main.py
-	# 验证构建结果
-	@if [ -f "$(TARGET)" ]; then \
-		echo "构建成功: $(TARGET)"; \
-	else \
-		echo "构建失败: $(TARGET) 未生成"; \
-		exit 1; \
-	fi
+# 构建 CLI 和 GUI 可执行文件
+build: build-cli build-gui
+
+build-cli:
+	nuitka --standalone --onefile \
+	--include-data-file=src/config/logging_config.toml=logging_config.toml \
+	src/main.py
+
+build-gui:
+	nuitka --standalone --onefile \
+	--include-module=PySide6 \
+	--include-data-file=src/config/logging_config.toml=logging_config.toml \
+	src/module/gui/main_gui.py
 
 # 安装到本地
 .PHONY: install
