@@ -1,16 +1,30 @@
+import os
 from pathlib import Path
 
+import toml
 from loguru import logger
 
 
-def setup_logger(log_file: str = "app.log", rotation: str = "00:00", retention: int = 7):
+def load_logging_config():
+    """加载日志配置文件"""
+    config_path = Path(__file__).parent / "logging_config.toml"
+    
+    if config_path.exists():
+        with open(config_path, "r") as f:
+            return toml.load(f)
+    else:
+        raise FileNotFoundError(f"日志配置文件未找到: {config_path}")
+
+
+def setup_logger():
     """
     初始化日志记录器，默认不输出到控制台，仅写入日志文件。
-
-    :param log_file: 日志文件路径（相对于日志目录）
-    :param rotation: 日志文件滚动时间（默认每天滚动）
-    :param retention: 日志保留天数（默认 7 天）
+    使用配置文件来定义日志设置。
     """
+    # 加载配置文件
+    config = load_logging_config()
+    logger_config = config["logger"]
+
     # 清除已有的日志处理器
     logger.remove()
 
@@ -19,16 +33,21 @@ def setup_logger(log_file: str = "app.log", rotation: str = "00:00", retention: 
     log_dir.mkdir(parents=True, exist_ok=True)
 
     # 构建完整的日志文件路径
-    log_path = log_dir / log_file
+    log_path = log_dir / logger_config["log_file"]
 
-    # 添加文件日志处理器，按天滚动、压缩、保留 7 天
+    # 设置文件权限（默认 600）
+    if "file_permission" in logger_config:
+        os.chmod(log_path, int(logger_config["file_permission"], 8))  # 8进制转换
+
+    # 添加文件日志处理器，按天滚动、压缩、保留指定天数
     logger.add(
         log_path,
-        rotation=rotation,
-        retention=retention,
+        rotation=logger_config.get("rotation", "00:00"),
+        retention=logger_config.get("retention", 7),
         compression="zip",
-        level="DEBUG",
-        encoding="utf-8"
+        level=logger_config.get("level", "DEBUG"),
+        encoding="utf-8",
+        format=logger_config.get("format", "{time} | {level} | {module} | {message}")
     )
 
     return logger

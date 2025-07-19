@@ -51,6 +51,7 @@ NUITKA_OPTS := \
     --follow-imports \
     --no-progressbar \
     --include-data-file=pyproject.toml=pyproject.toml \
+    --include-data-file=src/config/logging_config.toml=logging_config.toml \
     $(NUITKA_DOWNLOAD_FLAG)  # 条件参数：仅Windows生效
 
 # 开发环境依赖安装
