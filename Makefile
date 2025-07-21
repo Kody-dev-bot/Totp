@@ -4,7 +4,8 @@ VERSION := $(shell poetry version -s)
 # 核心路径配置
 GUI_ENTRY := src/gui/main.py
 CLI_ENTRY := src/cli/main.py
-RESOURCES := resources/config.env
+RESOURCES_CONFIG := resources/config.env
+ENCRYPT_KEY := resources/encrypt_key.bin
 DIST_DIR := dist
 GUI_DIST := $(DIST_DIR)/gui
 CLI_DIST := $(DIST_DIR)/cli
@@ -28,7 +29,8 @@ endif
 # 基础Nuitka选项
 BASE_NUITKA_OPTS = --standalone --onefile --follow-imports --no-progressbar \
                    --include-data-file=pyproject.toml=pyproject.toml \
-                   --include-data-files=$(RESOURCES)=resources/config.env \
+                   --include-data-files=$(RESOURCES_CONFIG)=resources/config.env \
+                   --include-data-files=$(ENCRYPT_KEY)=resources/encrypt_key.bin \
                    --include-module=pyotp --include-module=pyperclip \
                    --include-module=loguru --include-module=json \
                    $(NUITKA_DOWNLOAD_FLAG)
