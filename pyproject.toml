@@ -1,7 +1,7 @@
 [project]
 name = "totp"
 version = "0.1.0"
-description = ""
+description = "A tool to generate TOTP"
 authors = [
     {name = "kdoy",email = "zj.wang.work@zohomail.cn"}
 ]
