@@ -3,7 +3,8 @@ from pathlib import Path
 import click
 
 from src.core.config import get_db_path
-from src.core.database import TotpAccountManager, init_db
+from src.core.data.database import init_db
+from src.core.data.operation.totp_account_manager import TotpAccountManager
 from src.core.totp_utils import get_totp
 from src.core.utils.encryption_utils import (
     init_encrypt_key,
