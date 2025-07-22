@@ -31,7 +31,6 @@ def totp_init():
     else:
         init_db()
         click.echo(click.style("数据库初始化完成", fg="green"))
-    init_encrypt_key()
 
 
 @totp_cli.command("add")

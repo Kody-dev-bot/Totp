@@ -10,7 +10,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from src.core.logging import get_logger
-
+from src.core.data.entity.totp_key_storage import TotpKeyStorage
+from peewee import DoesNotExist
 log = get_logger()
 
 
@@ -90,75 +91,59 @@ class EncryptionUtils:
             raise ValueError("解密失败，密钥可能不正确或数据已损坏") from e
 
     @classmethod
-    def load_encrypt_key(cls, key_path: str = "resources/encrypt_key.bin") -> bytes:
-        """从文件加载加密密钥（兼容开发和打包后环境）"""
+    def load_encrypt_key(cls) -> bytes:
+        """从数据库加载加密密钥"""
         try:
-            # 判断是否为打包后的程序
-            if getattr(sys, "frozen", False):
-                # 打包后：资源文件在可执行程序所在目录
-                base_path = Path(sys.executable).parent
-            else:
-                # 开发时：资源文件在项目根目录
-                base_path = Path(__file__).parent.parent.parent  # 根据实际目录层级调整
-
-            full_path = base_path / key_path
-            with open(full_path, "rb") as f:
-                return f.read()
-        except FileNotFoundError:
-            raise FileNotFoundError(f"加密密钥文件未找到：{full_path}")
-        except Exception as e:
-            raise IOError(f"加载密钥失败：{str(e)}") from e
+            key_record = TotpKeyStorage.get(TotpKeyStorage.key_name == "main_key")
+            return key_record.encrypted_key
+        except DoesNotExist:
+            raise ValueError("未找到加密密钥，请先初始化密钥")
 
     @classmethod
-    def save_encrypt_key(
-        cls, key: bytes, key_path: str = "resources/encrypt_key.bin"
-    ) -> None:
-        """保存加密密钥到文件
-
+    def save_encrypt_key(cls, key: bytes) -> None:
+        """保存加密密钥到数据库
+        
         Args:
-                key: 要保存的Fernet密钥
-                key_path: 保存路径
+            key: 要保存的Fernet密钥
         """
         try:
-            # 创建父目录（如果不存在）
-            os.makedirs(os.path.dirname(key_path), exist_ok=True)
-            with open(key_path, "wb") as f:
-                f.write(key)
-        except Exception as e:
-            raise IOError(f"保存密钥失败：{str(e)}") from e
-
+            # 尝试更新现有记录
+            key_record = TotpKeyStorage.get(TotpKeyStorage.key_name == "main_key")
+            key_record.encrypted_key = key
+            key_record.save()
+            log.info("加密密钥已更新并保存到数据库")
+            return
+        except DoesNotExist:
+            # 如果记录不存在，则创建新记录
+            TotpKeyStorage.create(key_name="main_key", encrypted_key=key)
+            log.info("加密密钥已创建并保存到数据库")
+            return
 
 # 项目专用的加密函数（简化调用）
-def init_encrypt_key(key_path: str = "resources/encrypt_key.bin") -> None:
+def init_encrypt_key() -> None:
     """初始化加密密钥（兼容开发和打包后环境）"""
-    # 动态获取路径（同 load_encrypt_key）
-    if getattr(sys, "frozen", False):
-        base_path = Path(sys.executable).parent
-    else:
-        base_path = Path(__file__).parent.parent.parent
-
-    full_path = base_path / key_path
-
-    if not full_path.exists():
-        key = EncryptionUtils.generate_fernet_key()
-        # 确保 resources 目录存在
-        full_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(full_path, "wb") as f:
-            f.write(key)
-        log.info(f"加密密钥已生成并保存到：{full_path}")
-    else:
-        log.info(f"加密密钥已存在：{full_path}")
+    try:
+        # 检查数据库中是否已经存在密钥
+        TotpKeyStorage.get(TotpKeyStorage.key_name == "main_key")
+        log.info("加密密钥已存在在数据库中")
+        return
+    except DoesNotExist:
+        log.info("数据库中未找到加密密钥，将生成新密钥")
+        EncryptionUtils().save_encrypt_key(EncryptionUtils.generate_fernet_key())
 
 
-def encrypt_secret(secret: bytes, key_path: str = "resources/encrypt_key.bin") -> bytes:
+
+def encrypt_secret(
+    secret: bytes, 
+    ) -> bytes:
     """加密TOTP密钥（项目专用接口）"""
-    key = EncryptionUtils.load_encrypt_key(key_path)
+    key = EncryptionUtils.load_encrypt_key()
     return EncryptionUtils.encrypt(secret, key)
 
 
 def decrypt_secret(
-    encrypted_secret: bytes, key_path: str = "resources/encrypt_key.bin"
+    encrypted_secret: bytes
 ) -> bytes:
     """解密TOTP密钥（项目专用接口）"""
-    key = EncryptionUtils.load_encrypt_key(key_path)
+    key = EncryptionUtils.load_encrypt_key()
     return EncryptionUtils.decrypt(encrypted_secret, key)
