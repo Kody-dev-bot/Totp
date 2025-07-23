@@ -2,7 +2,7 @@ from src.core.data.entity.totp_account import TotpAccount
 
 from peewee import DoesNotExist
 
-from src.core.logging import get_logger
+from src.core.config.logging import get_logger
 
 log = get_logger()
 

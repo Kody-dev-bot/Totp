@@ -14,7 +14,7 @@ def _get_env_file_path():
         config_path = base_path / "resources" / "config.env"
     else:
         # 开发时：读取项目根目录的 resources/config-dev.env
-        base_path = Path(__file__).parent.parent.parent  # 从 src 回溯到项目根
+        base_path = Path(__file__).parent.parent.parent.parent  # 从 src 回溯到项目根
         config_path = base_path / "resources" / "config.env"
         load_dotenv(config_path)  # 开发时用 python-dotenv 加载
     return config_path
