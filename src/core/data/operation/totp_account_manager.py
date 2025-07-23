@@ -6,6 +6,7 @@ from src.core.logging import get_logger
 
 log = get_logger()
 
+
 # 账户操作工具类
 class TotpAccountManager:
     @staticmethod
@@ -47,9 +48,11 @@ class TotpAccountManager:
         """更新账户信息"""
         try:
             if encrypted_secret is not None:
-                update = TotpAccount.update(encrypted_secret=encrypted_secret).where(
-                    TotpAccount.account_name == account_name
-                ).execute()
+                update = (
+                    TotpAccount.update(encrypted_secret=encrypted_secret)
+                    .where(TotpAccount.account_name == account_name)
+                    .execute()
+                )
                 log.info(f"账户 {account_name} 密钥更新成功")
                 return update == 1
         except DoesNotExist:

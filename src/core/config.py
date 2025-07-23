@@ -53,6 +53,7 @@ def get_db_path():
 
     return db_path
 
+
 def get_log_path():
     """获取日志文件路径（兼容开发和打包后环境）"""
     config_path = _get_env_file_path()

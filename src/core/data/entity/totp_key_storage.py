@@ -2,6 +2,7 @@ from src.core.data.base_model import BaseModel
 
 from peewee import CharField, BlobField
 
+
 class TotpKeyStorage(BaseModel):
     """加密密钥存储表"""
 
