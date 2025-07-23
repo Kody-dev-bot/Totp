@@ -9,9 +9,10 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-from src.core.logging import get_logger
+from src.core.config.logging import get_logger
 from src.core.data.entity.totp_key_storage import TotpKeyStorage
 from peewee import DoesNotExist
+
 log = get_logger()
 
 
@@ -102,7 +103,7 @@ class EncryptionUtils:
     @classmethod
     def save_encrypt_key(cls, key: bytes) -> None:
         """保存加密密钥到数据库
-        
+
         Args:
             key: 要保存的Fernet密钥
         """
@@ -119,6 +120,7 @@ class EncryptionUtils:
             log.info("加密密钥已创建并保存到数据库")
             return
 
+
 # 项目专用的加密函数（简化调用）
 def init_encrypt_key() -> None:
     """初始化加密密钥（兼容开发和打包后环境）"""
@@ -132,18 +134,15 @@ def init_encrypt_key() -> None:
         EncryptionUtils().save_encrypt_key(EncryptionUtils.generate_fernet_key())
 
 
-
 def encrypt_secret(
-    secret: bytes, 
-    ) -> bytes:
+    secret: bytes,
+) -> bytes:
     """加密TOTP密钥（项目专用接口）"""
     key = EncryptionUtils.load_encrypt_key()
     return EncryptionUtils.encrypt(secret, key)
 
 
-def decrypt_secret(
-    encrypted_secret: bytes
-) -> bytes:
+def decrypt_secret(encrypted_secret: bytes) -> bytes:
     """解密TOTP密钥（项目专用接口）"""
     key = EncryptionUtils.load_encrypt_key()
     return EncryptionUtils.decrypt(encrypted_secret, key)

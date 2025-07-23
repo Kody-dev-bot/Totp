@@ -3,7 +3,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from src.core.config import get_log_path
+from src.core.config.config import get_log_path
 
 
 # 硬编码日志配置

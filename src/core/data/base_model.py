@@ -7,8 +7,8 @@ from peewee import (
     DateTimeField,
 )
 
-from src.core.config import get_db_path
-from src.core.logging import get_logger
+from src.core.config.config import get_db_path
+from src.core.config.logging import get_logger
 
 log = get_logger()
 

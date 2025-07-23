@@ -5,9 +5,8 @@ import click
 from src.core.config import get_db_path
 from src.core.data.database import init_db
 from src.core.data.operation.totp_account_manager import TotpAccountManager
-from src.core.totp_utils import get_totp
+from src.core.utils.totp_utils import TOTPUtils
 from src.core.utils.encryption_utils import (
-    init_encrypt_key,
     encrypt_secret,
     decrypt_secret,
 )
@@ -67,7 +66,7 @@ def totp_get(account_name):
     if account:
         secret = decrypt_secret(account.encrypted_secret)
         click.echo(click.style(f"✅ 获取账户成功: {account_name}", fg="green"))
-        click.echo(get_totp(secret.decode()))
+        click.echo(TOTPUtils.generate_totp(secret.decode()))
     else:
         click.echo(click.style(f"❌ 获取账户失败: {account_name}", fg="red"))
 

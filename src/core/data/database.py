@@ -2,8 +2,8 @@ from pathlib import Path
 
 from peewee import SqliteDatabase
 
-from src.core.config import get_db_path
-from src.core.logging import get_logger
+from src.core.config.config import get_db_path
+from src.core.config.logging import get_logger
 
 from src.core.data.entity.totp_account import TotpAccount
 from src.core.data.entity.totp_key_storage import TotpKeyStorage
