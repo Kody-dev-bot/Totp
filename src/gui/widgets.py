@@ -76,7 +76,8 @@ class AccountListFrame(ttk.Frame):
         current_time = time.time()
         # 清理过期的显示记录（超过5秒自动隐藏）
         self.visible_codes = {
-            name: expiry for name, expiry in self.visible_codes.items()
+            name: expiry
+            for name, expiry in self.visible_codes.items()
             if expiry > current_time
         }
 
@@ -86,9 +87,7 @@ class AccountListFrame(ttk.Frame):
                 # 解密密钥并生成TOTP
                 secret = decrypt_secret(account.encrypted_secret).decode()
                 totp_code = TOTPUtils.generate_totp(
-                    secret=secret,
-                    digits=account.digits,
-                    period=account.period
+                    secret=secret, digits=account.digits, period=account.period
                 )
 
                 # 显示逻辑：默认用●隐藏，需要时显示明文
@@ -107,10 +106,13 @@ class AccountListFrame(ttk.Frame):
 
     def start_refresh_timer(self):
         """定时刷新TOTP码（每1秒）"""
+
         def refresh():
             self.load_accounts()
             self.after(1000, refresh)  # 1秒后再次刷新
+
         refresh()
+
 
 class AddAccountDialog(tk.Toplevel):
     """添加账户对话框"""

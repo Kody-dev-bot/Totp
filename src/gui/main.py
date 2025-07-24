@@ -3,7 +3,7 @@ from tkinter import ttk, messagebox
 from src.gui.widgets import AccountListFrame, AddAccountDialog
 from src.core.data.operation.totp_account_manager import TotpAccountManager
 from src.core.utils.encryption_utils import init_encrypt_key
-from src.core.data.database import init_db  # 假设数据库初始化函数在这里
+from src.core.data.database import init_db
 
 
 class TOTPApp(tk.Tk):
